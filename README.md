@@ -1,128 +1,175 @@
-# IELTS Listening AI Trainer
+## Version 2 Upgrade Notes
 
-A local full-stack IELTS listening practice app with audio transcription, sentence shadowing, cloze tests, and local scoring.
+IELTS Listening AI Trainer Version 2 focuses on rebuilding the app from a simple UI tool into a timeline-based listening training system.
 
-## What This Repository Contains
+### Major Improvements
 
-This GitHub version is intentionally lightweight.
+1. Better local transcription model  
+Version 2 now uses Whisper `base` as the default model instead of `tiny`, giving better transcription accuracy and a better first-run experience.
 
-It includes:
+2. Word-level audio timing  
+The transcription pipeline now generates word-level timestamps where available. Sentences are built from real word boundaries instead of rough time estimates.
 
-- Source code
-- Backend API code
-- Frontend UI code
-- macOS and Windows launch scripts
-- Security and privacy documentation
+3. More accurate sentence playback  
+Sentence playback now uses strict `start` and `end` timing. The audio player seeks to the sentence start, plays only that sentence, and stops at the sentence boundary.
 
-It does **not** include:
+4. Unified audio engine  
+The progress bar, seeking, playback state, sentence highlighting, and playback speed are now driven by the real audio element state.
 
-- `node_modules`
-- `.next`
-- `.runtime`
-- Python virtual environments
-- uploaded audio files
-- Whisper model files
-- local build caches
+5. Playback speed support  
+Users can listen at multiple speeds: `0.75x`, `1.0x`, `1.25x`, `1.5x`, and `2.0x`.
 
-Those files are downloaded or generated on the user's computer when the app starts.
+6. Session-based answer storage  
+Each practice sentence now has its own answer and score. Moving to the next question clears the input for the new question while preserving previous answers and scores.
 
-## Folder Structure
+7. Inline cloze practice  
+Cloze questions are generated directly inside the transcript instead of using a separate answer area.
 
-```text
-Mac
-Windows
-Required Files
-中文操作指南_安全与隐私说明.md
-```
-
-## Quick Start
-
-### macOS
-
-Open:
+8. Cleaner GitHub release structure  
+The project is now organized into three simple folders:
 
 ```text
-Mac/start-mac.command
+Mac/
+Windows/
+AppFiles/
 ```
 
-or:
+Mac and Windows each have one command file with a menu for install, model download, start, and uninstall.
+
+9. Smaller initial repository size  
+Dependencies, build folders, Python virtual environments, and Whisper model files are excluded from the repository. They are downloaded locally by the user when running the command file.
+
+---
+
+## How It Works
+
+IELTS Listening AI Trainer runs fully on the user's own computer. No paid API is required.
+
+### 1. Audio Upload
+
+The user uploads an audio file or imports an audio URL. The app stores the audio locally in the browser when possible, so the same file can be reused during practice.
+
+### 2. Local Transcription
+
+The backend uses local Whisper to transcribe the audio. By default, Version 2 uses the `base` model for better accuracy.
+
+The model is not included in the GitHub repository. It is downloaded automatically on the user's machine during setup.
+
+### 3. Word-Level Timing
+
+When Whisper returns word-level timestamps, each word receives:
 
 ```text
-Mac/IELTS Listening AI Trainer.app
+start time
+end time
+text
 ```
 
-### Windows
-
-Open:
+The app then builds sentence timing from word groups:
 
 ```text
-Windows/start-windows.bat
+sentence start = first word start
+sentence end = last word end
 ```
 
-or:
+This makes sentence playback more accurate than simple segment splitting.
+
+### 4. Timeline-Based Practice
+
+Practice mode is built around the audio timeline.
+
+Each sentence has:
 
 ```text
-Windows/IELTS Listening AI Trainer.bat
+sentence text
+start time
+end time
+word timestamps
+user answer
+score
+mistakes
 ```
 
-The app opens at:
+The player uses the real audio time to decide which sentence and word should be active.
+
+### 5. Sentence Playback
+
+When the user plays a sentence:
 
 ```text
-http://localhost:3000
+seek to sentence.start
+play audio
+watch audio.currentTime
+pause when currentTime reaches sentence.end
 ```
 
-## Requirements
+This prevents the audio from continuing into the next sentence.
 
-Python 3.10+ is recommended.
+### 6. Progress Bar and Seeking
 
-Node.js is optional. If Node.js/npm is not installed, the launcher downloads a private Node.js runtime into:
+The progress bar is connected directly to the audio element.
+
+When the audio plays, the bar moves according to:
 
 ```text
-Required Files/.runtime/node
+audio.currentTime
 ```
 
-This does not install Node.js system-wide.
-
-## First Run
-
-The first run may take several minutes because it can download:
-
-- private Node.js runtime
-- frontend npm dependencies
-- Python backend dependencies
-- Whisper model files
-
-The launch scripts try official sources first and then China-friendly mirrors.
-
-## Privacy
-
-Uploaded audio is stored locally in:
+When the user drags the bar, the app updates:
 
 ```text
-Required Files/backend/uploads
+audio.currentTime = selected time
 ```
 
-The app does not use OpenAI API. Transcription runs locally with `faster-whisper`.
+This keeps the UI and audio perfectly synchronized.
 
-Read:
+### 7. Scoring
+
+After the user submits an answer, the app compares it with the correct sentence using local scoring logic:
 
 ```text
-中文操作指南_安全与隐私说明.md
-Required Files/SECURITY_AND_PRIVACY.md
+string similarity
+keyword matching
+Levenshtein distance
 ```
 
-## Uninstall
-
-Run:
+The backend returns only:
 
 ```text
-Mac/uninstall-delete-everything.command
+score
+mistakes
 ```
 
-or:
+Correct answers are not revealed before submission.
+
+### 8. Session Persistence
+
+Practice data is saved locally in the browser.
+
+Saved data includes:
 
 ```text
-Windows/uninstall-delete-everything.bat
+transcript
+sentences
+current question index
+user answers
+scores
+mistakes
+study time
 ```
 
-The uninstaller asks for confirmation before deleting files.
+Refreshing the page does not erase the session.
+
+### 9. Local-First Design
+
+The app is designed to run locally:
+
+```text
+Frontend: Next.js
+Backend: FastAPI
+Transcription: local Whisper
+Storage: browser local storage / IndexedDB
+Scoring: local algorithm
+```
+
+This keeps the app private, low-cost, and independent from paid external AI services.
