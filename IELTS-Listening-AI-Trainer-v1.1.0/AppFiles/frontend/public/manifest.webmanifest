@@ -1,0 +1,10 @@
+{
+  "name": "IELTS Listening AI Trainer",
+  "short_name": "IELTS Trainer",
+  "description": "Local-first, time-synchronized IELTS listening practice",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b477f",
+  "theme_color": "#1269b2",
+  "orientation": "any"
+}
